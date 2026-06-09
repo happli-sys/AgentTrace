@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgentTrace Dashboard</title>
+  <style>
+    :root {
+      --bg:#f3f5f8;
+      --panel:#ffffff;
+      --panel-2:#f6f8fb;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --blue:#2563eb;
+      --blue-bg:#eff6ff;
+      --green:#16a34a;
+      --green-bg:#f0fdf4;
+      --amber:#d97706;
+      --amber-bg:#fffbeb;
+      --red:#dc2626;
+      --red-bg:#fef2f2;
+      --shadow:0 4px 16px rgba(15,23,42,.045);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text)}
+    .app{display:grid;grid-template-columns:300px 1fr;height:100vh}
+    .sidebar{background:#fbfcfe;border-right:1px solid var(--line);overflow:auto}
+    .main{overflow:auto}
+    
+    
+    
+    .title{font-size:18px;font-weight:700;letter-spacing:.2px}
+    .sub{font-size:12px;color:var(--muted);margin-top:4px}
+    .list{padding:12px 10px 10px}
+    .item{padding:13px 14px;border:1px solid #e6ebf2;border-radius:14px;background:#fff;margin-bottom:8px;cursor:pointer;transition:.16s ease;box-shadow:none}
+    .item:hover{transform:translateY(-1px);border-color:#d8e1ec;box-shadow:var(--shadow)}
+    .item.active{border-color:#9dbcf7;box-shadow:0 0 0 2px #e8f0ff}
+    .task{font-size:14px;line-height:1.45;margin-bottom:10px;font-weight:600}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .pill{font-size:11px;padding:4px 8px;border-radius:999px;background:#f3f4f6;color:#4b5563;border:1px solid #eceff3}
+    .score{margin-left:auto;font-weight:700;color:var(--blue)}
+
+    .wrap{padding:12px 22px 28px;max-width:1200px;margin:0 auto}
+    .hero{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;align-items:stretch}
+    .card{background:var(--panel);border:1px solid #e6ebf2;border-radius:16px;box-shadow:var(--shadow)}
+    .card-pad{padding:18px}
+    .task-box{padding:18px}
+    .label{font-size:12px;color:var(--muted);margin-bottom:8px}
+    .big-task{font-size:20px;line-height:1.5;font-weight:700}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+
+    .metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .metric{padding:15px 16px;border:1px solid #e7edf4;border-radius:14px;background:var(--panel-2)}
+    .metric .k{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .metric .v{font-size:24px;font-weight:800;letter-spacing:-.02em}
+
+    .section{margin-top:18px}
+    .section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .section-title h3{margin:0;font-size:15px}
+    .section-title .hint{font-size:12px;color:var(--muted)}
+    .review-card{background:#fff;border:1px solid #e6ebf2;border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+    .review-summary{font-size:14px;line-height:1.75;color:#334155;background:#f8fafc;border:1px solid #eef2f7;border-radius:14px;padding:14px 16px}
+    .review-list{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .review-item{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff}
+    .review-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+    .sev{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:700}
+    .sev.high{color:#b91c1c;background:#fef2f2}
+    .sev.medium{color:#b45309;background:#fffbeb}
+    .sev.low{color:#1d4ed8;background:#eff6ff}
+    .review-target{font-size:12px;color:var(--muted)}
+    .review-body{font-size:13px;line-height:1.7;color:#334155}
+    .diag-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .diag-card{background:#fff;border:1px solid #e6ebf2;border-radius:14px;padding:14px 16px}
+    .diag-k{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .diag-v{font-size:24px;font-weight:800;letter-spacing:-.02em;color:#0f172a}
+    .diag-panel{background:#fff;border:1px solid #e6ebf2;border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+    .diag-list{display:flex;flex-direction:column;gap:10px}
+    .diag-item{border:1px solid #eef2f7;border-radius:12px;padding:12px 14px;background:#fbfdff}
+    .diag-item-title{font-size:13px;font-weight:800;color:#334155;margin-bottom:6px}
+    .diag-item-sub{font-size:12px;line-height:1.6;color:#64748b}
+    .cluster-card{border:1px solid #e8edf5;border-radius:12px;padding:8px 10px;background:#fcfdff;box-shadow:none}
+    .cluster-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .cluster-title{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+    .cluster-name{font-size:13px;font-weight:800;color:#334155;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cluster-count{font-size:12px;color:#64748b;font-weight:700;white-space:nowrap}
+    .cluster-meta{margin-top:4px;font-size:12px;color:#94a3b8;line-height:1.4}
+    .cluster-toggle{border:1px solid #e2e8f0;background:#fff;color:#475569;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700;cursor:pointer;flex:none}
+    .cluster-toggle:hover{background:#f8fafc}
+    .cluster-body{margin-top:8px}
+
+    .io{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .bubble{padding:16px;border-radius:16px;background:#fff;border:1px solid #e6ebf2;line-height:1.7;white-space:pre-wrap;box-shadow:var(--shadow)}
+    .bubble b{display:block;margin-bottom:10px;font-size:13px;color:var(--muted)}.md-output{line-height:1.75;color:#1f2937}.md-output h1,.md-output h2,.md-output h3,.md-output h4{margin:0 0 12px;font-weight:800;line-height:1.35}.md-output p{margin:0 0 12px}.md-output ul,.md-output ol{margin:0 0 12px 20px;padding:0}.md-output li{margin:4px 0}.md-output strong{font-weight:800}.md-output code{background:#f3f4f6;padding:2px 6px;border-radius:6px;font-size:12px}.md-output pre{background:#0f172a;color:#e2e8f0;padding:12px 14px;border-radius:12px;overflow:auto}.md-output pre code{background:transparent;padding:0;color:inherit}
+    .output-shell{display:flex;flex-direction:column;gap:10px}
+    .output-frame{position:relative}
+    .output-frame.collapsed .bubble{max-height:220px;overflow:hidden}
+    .output-frame.collapsed:after{content:"";position:absolute;left:1px;right:1px;bottom:1px;height:72px;background:linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,.92) 55%, #fff 100%);border-radius:0 0 16px 16px;pointer-events:none}
+    .output-toggle{align-self:flex-start;border:1px solid #dbe3ef;background:#fff;color:#475569;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer}
+    .output-toggle:hover{background:#f8fafc}
+
+    
+    .gantt{background:#fff;border:1px solid #e6ebf2;border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+    .gantt-head{display:grid;grid-template-columns:220px 1fr 120px;gap:16px;padding:0 0 8px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+    .gantt-title{font-size:12px;color:var(--muted);font-weight:600}
+    .gantt-scale{position:relative;height:30px;margin:0 0 12px 292px}
+    .gantt-scale-track{position:relative;height:100%;background:#fbfcfe;border:1px solid #edf2f7;border-radius:12px;overflow:hidden}
+    .gantt-scale-grid{position:absolute;inset:0;background-image:linear-gradient(to right, rgba(148,163,184,.18) 1px, transparent 1px);background-size:10% 100%}
+    .gantt-scale-label{position:absolute;top:6px;font-size:11px;color:var(--muted);transform:translateX(-50%);white-space:nowrap}.gantt-scale-label.first{left:0 !important;transform:none}.gantt-scale-label.last{right:0;left:auto !important;transform:none}
+    .gantt-group{margin:10px 0 14px;padding:0;border:none;background:transparent}
+    .gantt-group.group-none{padding:0;border:none;background:transparent;margin:0}
+    .gantt-group-label{display:flex;align-items:center;gap:8px;margin:0 0 6px 0;font-size:12px;color:var(--muted);font-weight:700;padding:0 4px}
+    .gantt-group-label .dot{width:8px;height:8px;border-radius:999px;background:#94a3b8}
+    .gantt-row{display:grid;grid-template-columns:220px 1fr 120px;gap:16px;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9}
+    .gantt-row:last-child{border-bottom:none}
+    .gantt-left{display:flex;flex-direction:column;gap:4px;min-width:0}
+    .gantt-name{font-size:13px;font-weight:700;line-height:1.3;word-break:break-word}
+    .gantt-meta{display:flex;gap:6px;flex-wrap:wrap}
+    .gantt-track{position:relative;height:50px;background:#f8fafc;border-radius:14px;border:1px solid #edf2f7;overflow:visible}
+    .gantt-grid{position:absolute;inset:0;background-image:linear-gradient(to right, rgba(148,163,184,.16) 1px, transparent 1px);background-size:10% 100%;border-radius:14px;pointer-events:none}
+    .gantt-bar{position:absolute;top:8px;height:24px;border-radius:8px;min-width:36px;display:flex;align-items:center;padding:0 6px;font-size:12px;font-weight:700;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+    .gantt-bar.llm{background:linear-gradient(90deg,#dbeafe,#bfdbfe);color:#1d4ed8;border:1px solid #bfdbfe}
+    .gantt-bar.tool{background:linear-gradient(90deg,#dcfce7,#bbf7d0);color:#15803d;border:1px solid #bbf7d0}
+    .gantt-bar.skill{background:linear-gradient(90deg,#fef3c7,#fde68a);color:#b45309;border:1px solid #fde68a}
+    .gantt-bar .label-full{display:none}
+    .gantt-bar.compact{justify-content:center;padding:0 6px}
+    .gantt-bar.compact .label-full{display:none}
+    .gantt-bar.compact .label-mini{display:block;font-size:11px;line-height:1}
+    .gantt-bar .label-mini{display:none}
+    .group-pill{font-size:11px;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#4f46e5;border:1px solid #e0e7ff}
+    .param-box{margin-top:8px;padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid #edf2f7;font-size:12px;line-height:1.5;color:#475569;white-space:pre-wrap;word-break:break-word}.param-toggle{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#475569;background:#f8fafc;border:1px solid #edf2f7;border-radius:999px;padding:5px 10px;cursor:pointer;user-select:none}.param-toggle:hover{background:#f3f6fb}
+    .trace-group{margin:10px 0 14px;padding:10px 12px;border:1px solid #e8eef7;border-radius:14px;background:#fbfdff}.trace-group-header{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#334155;margin-bottom:6px}.trace-group-header .dot{width:8px;height:8px;border-radius:999px;background:#64748b}.trace-group-sub{font-size:11px;color:#94a3b8;margin-left:16px;margin-bottom:8px}.trace-child{position:relative;padding-left:14px;border-left:none;margin-left:10px}.trace-child:before{content:"";position:absolute;left:0;top:-8px;bottom:-8px;width:2px;background:#e2e8f0;border-radius:2px}.trace-child:after{content:"";position:absolute;left:0;top:22px;width:10px;height:2px;background:#e2e8f0;border-radius:2px}.trace-name-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between}.trace-arg{font-size:12px;color:#64748b;font-weight:500}.gantt-duration{font-size:13px;font-weight:700;color:#475569;text-align:right;white-space:nowrap}.gantt-duration.bad{color:#dc2626}.gantt-duration.good{color:#15803d}.llm-toggle{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#475569;background:#f8fafc;border:1px solid #edf2f7;border-radius:999px;padding:5px 10px;cursor:pointer;user-select:none}.llm-detail{margin-top:8px;padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid #edf2f7;font-size:12px;line-height:1.6;color:#475569;white-space:pre-wrap;word-break:break-word}.llm-detail b{display:block;margin:0 0 6px;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em}.msg-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}.msg-block{border:1px solid #e5e7eb;border-radius:12px;background:#fff;overflow:hidden}.msg-head{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid #eef2f7;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}.msg-head.system{background:#f5f3ff;color:#6d28d9}.msg-head.user{background:#eff6ff;color:#1d4ed8}.msg-head.assistant{background:#f0fdf4;color:#15803d}.msg-body{padding:10px 12px;white-space:pre-wrap;word-break:break-word;line-height:1.65;color:#334155}.resp-block{margin-top:8px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}.resp-head{padding:8px 10px;border-bottom:1px solid #eef2f7;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:#f8fafc;color:#64748b}.resp-body{padding:10px 12px;white-space:pre-wrap;word-break:break-word;line-height:1.7;color:#1f2937}.modal-mask{position:fixed;inset:0;background:rgba(15,23,42,.42);display:none;align-items:center;justify-content:center;z-index:1000;padding:24px}.modal-mask.open{display:flex}.modal{width:min(980px,100%);max-height:88vh;background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 20px 60px rgba(15,23,42,.22);overflow:hidden}.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #eef2f7;background:#fafcff}.modal-title{font-size:15px;font-weight:800}.modal-close{border:none;background:#f3f4f6;color:#475569;border-radius:999px;padding:6px 10px;cursor:pointer}.modal-body{padding:16px;overflow:auto;max-height:calc(88vh - 58px)}.tab-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tab-btn{border:1px solid #e5e7eb;background:#f8fafc;color:#475569;border-radius:999px;padding:6px 10px;cursor:pointer;font-size:12px}.tab-btn.active{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}.tab-panel{display:none}.tab-panel.active{display:block}.kv{display:grid;grid-template-columns:180px 1fr;gap:8px 12px;font-size:13px}.kv .k{color:#64748b}.kv .v{color:#111827;word-break:break-word}.json-box{padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid #edf2f7;white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.6}.state-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.state-card{border:1px solid #e5e7eb;border-radius:14px;background:#fff;padding:12px}.state-card.full{grid-column:1 / -1}.state-title{font-size:12px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}.state-list{margin:0;padding-left:18px}.state-list li{margin:4px 0}.state-tree{display:flex;flex-direction:column;gap:6px}.tree-item{padding:8px 10px;border:1px solid #edf2f7;border-radius:10px;background:#fafcff}.tree-children{margin-top:6px;padding-left:14px;border-left:2px solid #e2e8f0}.source-pill{display:inline-block;font-size:11px;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#4f46e5;border:1px solid #e0e7ff;margin-bottom:10px}.trace-table{display:flex;flex-direction:column;gap:0}.trace-head,.trace-row{display:grid;grid-template-columns:240px 1fr 110px;gap:16px;align-items:center}.trace-head{padding:10px 0 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted);font-weight:700}.trace-row{padding:12px 0;border-bottom:1px solid #f1f5f9}.trace-left{min-width:0}.trace-name-inline{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap}.trace-main{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}.trace-duration{font-size:13px;font-weight:800;color:#475569;text-align:right;white-space:nowrap}.trace-duration.bad{color:#dc2626}.trace-group-box{margin:8px 0 10px;padding:10px 12px;border:1px solid #ebeff5;border-radius:12px;background:#fcfdff}.trace-group-header{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:#334155;margin-bottom:4px}.trace-group-header .dot{width:8px;height:8px;border-radius:999px;background:#94a3b8}.trace-group-sub{font-size:11px;color:#94a3b8;margin:0 0 2px 16px}.trace-child .trace-left{padding-left:10px;border-left:2px solid #e8edf5;margin-left:4px}.timeline-track{position:relative;height:34px;background:#f8fafc;border:1px solid #edf2f7;border-radius:14px;overflow:visible}.timeline-grid{position:absolute;inset:0;background-image:linear-gradient(to right, rgba(148,163,184,.16) 1px, transparent 1px);background-size:10% 100%;border-radius:14px;pointer-events:none}.timeline-bar{position:absolute;top:5px;height:22px;border-radius:8px;min-width:40px}.timeline-bar.llm{background:linear-gradient(90deg,#dbeafe,#bfdbfe);border:1px solid #bfdbfe}.timeline-bar.tool{background:linear-gradient(90deg,#dcfce7,#bbf7d0);border:1px solid #bbf7d0}.timeline-bar.skill{background:linear-gradient(90deg,#fef3c7,#fde68a);border:1px solid #fde68a}.gantt-row.compact-row{padding:6px 0}.gantt-track.simple{height:34px}.gantt-bar.simple{top:5px;height:22px;min-width:40px}
+    .gantt-shared-track{position:relative;background:#f8fafc;border:1px solid #edf2f7;border-radius:16px;overflow:visible;padding:8px 0;box-shadow: inset 0 1px 0 rgba(255,255,255,.7)}
+    .gantt-shared-grid{position:absolute;inset:0;background-image:linear-gradient(to right, rgba(148,163,184,.16) 1px, transparent 1px);background-size:10% 100%;border-radius:16px;pointer-events:none}
+    .gantt-lane{position:relative;height:34px;margin:2px 0}
+    .gantt-lane-label{position:absolute;left:10px;top:10px;font-size:10px;color:#94a3b8}
+
+    .gantt-head{display:grid;grid-template-columns:220px 1fr;gap:12px;padding:0 0 8px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+    .gantt-title{font-size:12px;color:var(--muted);font-weight:600}
+    .gantt-row{display:grid;grid-template-columns:220px 1fr;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9}
+    .gantt-row:last-child{border-bottom:none}
+    .gantt-left{display:flex;flex-direction:column;gap:6px}
+    .gantt-name{font-size:13px;font-weight:700;line-height:1.35}
+    .gantt-meta{display:flex;gap:6px;flex-wrap:wrap}
+    .gantt-track{position:relative;height:34px;background:#f8fafc;border-radius:999px;border:1px solid #edf2f7;overflow:hidden}
+    .gantt-bar{position:absolute;top:4px;height:24px;border-radius:999px;display:flex;align-items:center;padding:0 10px;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .gantt-bar.llm{background:linear-gradient(90deg,#dbeafe,#bfdbfe);color:#1d4ed8}
+    .gantt-bar.tool{background:linear-gradient(90deg,#dcfce7,#bbf7d0);color:#15803d}
+    .gantt-bar.skill{background:linear-gradient(90deg,#fef3c7,#fde68a);color:#b45309}
+    .group-pill{font-size:11px;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#4f46e5;border:1px solid #e0e7ff}
+
+    .timeline-wrap{padding:14px 0 0}
+    .timeline{position:relative;padding-left:30px}
+    .timeline:before{content:"";position:absolute;left:10px;top:8px;bottom:8px;width:2px;background:#dbe4f0;border-radius:2px}
+    .step{position:relative;background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow)}
+    .step:before{content:"";position:absolute;left:-25px;top:18px;width:12px;height:12px;border-radius:999px;background:#c7d2fe;border:3px solid #fff;box-shadow:0 0 0 1px #cbd5e1}
+    .step-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+    .step-title{font-weight:700}
+    .step-meta{font-size:12px;color:var(--muted)}
+    .badge{font-size:11px;padding:4px 9px;border-radius:999px;font-weight:700}
+    .badge.llm{color:var(--blue);background:var(--blue-bg)}
+    .badge.tool{color:var(--green);background:var(--green-bg)}
+    .badge.skill{color:var(--amber);background:var(--amber-bg)}
+    .mini{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .mini .pill{background:#fff}
+
+    .tool-table{width:100%;border-collapse:collapse;margin-top:10px}
+    .tool-table th,.tool-table td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+    .tool-table th{font-size:12px;color:var(--muted);font-weight:600}
+    .ok{color:var(--green);font-weight:600}
+    .bad{color:var(--red);font-weight:600}
+    .empty{padding:28px;color:var(--muted)}
+
+    @media (max-width: 1100px){
+      .hero,.io{grid-template-columns:1fr}
+    }
+    @media (max-width: 900px){
+      .app{grid-template-columns:1fr}
+      .sidebar{height:38vh}
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div id="sessionList" class="list"></div>
+    </aside>
+    <main class="main">
+      <div id="content" class="wrap"><div class="empty">等待会话数据...</div></div>
+    </main>
+  </div>
+<script>
+const sessionList = document.getElementById('sessionList');
+const content = document.getElementById('content');
+let sessions = [];
+let currentId = null;
+let llmPayloadStore = {};
+function esc(s){ return String(s ?? '').replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+function fmtMs(ms){ return ms == null ? '-' : `${Math.round(ms).toLocaleString()} ms`; }
+function fmtScore(v){ return v == null ? '-' : Number(v).toFixed(2); }
+function fmtUsd(v){ return v == null ? '-' : `$${Number(v).toFixed(5)}`; }
+
+async function loadSessions(){
+  const res = await fetch('/api/sessions');
+  sessions = await res.json();
+  renderList();
+  if (!currentId && sessions.length) selectSession(sessions[0].run_id);
+}
+
+function renderList(){
+  if (!sessions.length){ sessionList.innerHTML = '<div class="empty">暂无会话</div>'; return; }
+  sessionList.innerHTML = sessions.map(s => `
+    <div class="item ${s.run_id===currentId?'active':''}" data-id="${s.run_id}">
+      <div class="task">${esc(s.task)}</div>
+      <div class="row">
+        <span class="pill">${esc(s.model || 'unknown')}</span>
+        <span class="pill">${s.total_tokens} tokens</span>
+        <span class="pill">${Math.round(s.total_latency_ms)} ms</span>
+        <span class="score">${fmtScore(s.composite_score)}</span>
+      </div>
+    </div>`).join('');
+  sessionList.querySelectorAll('.item').forEach(el => el.onclick = () => selectSession(el.dataset.id));
+}
+
+async function selectSession(id){
+  currentId = id;
+  renderList();
+  const res = await fetch(`/api/session/${id}`);
+  const s = await res.json();
+  renderSession(s);
+}
+
+function renderMarkdown(text){
+  const src = String(text ?? '');
+  if (window.marked && window.marked.parse) {
+    return window.marked.parse(src);
+  }
+  return esc(src).replace(/\n/g, '<br>');
+}
+
+function renderSession(s){
+  const m = s.metrics || {};
+  content.innerHTML = `
+    <div class="hero">
+      <div class="card task-box">
+        <div class="label">用户任务</div>
+        <div class="big-task">${esc(s.input)}</div>
+        <div class="meta">
+          <span class="pill">模型：${esc(s.model || 'unknown')}</span>
+          <span class="pill">总 Tokens：${m.total_tokens ?? 0}</span>
+          <span class="pill">工具调用：${m.total_tool_calls ?? 0}</span>
+          <span class="pill">步骤：${m.total_steps ?? 0}</span>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="k">总耗时</div><div class="v">${fmtMs(m.total_latency_ms)}</div></div>
+        <div class="metric"><div class="k">综合分</div><div class="v">${fmtScore(m.composite_score)}</div></div>
+        <div class="metric"><div class="k">工具成功率</div><div class="v">${Math.round((m.tool_call_success_rate||0)*100)}%</div></div>
+        <div class="metric"><div class="k">Token 消耗</div><div class="v">${(m.total_tokens ?? 0).toLocaleString()}</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h3>调用链</h3><div class="hint">并行调用显示为共享泳道；顶部刻度展示相对时间</div></div>
+      <div class="gantt">
+        ${renderGantt(s.events || [])}
+      </div>
+    </div>
+
+    ${renderDiagnosticsSection(s)}
+
+    ${renderReviewSection(s)}
+
+    <div class="section io">
+      <div>
+        <div class="section-title"><h3>输入</h3></div>
+        <div class="bubble"><b>User</b>${esc(s.input)}</div>
+      </div>
+      <div>
+        <div class="section-title"><h3>输出</h3></div>
+        <div class="output-shell">
+          <div id="agentOutputFrame" class="output-frame collapsed">
+            <div class="bubble"><b>Agent</b><div class="md-output">${renderMarkdown(s.output)}</div></div>
+          </div>
+          <button id="agentOutputToggle" class="output-toggle" onclick="toggleAgentOutput(this)">展开输出</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDiagnosticsSection(s){
+  const d = s.diagnostics || null;
+  if (!d) return '';
+  const ov = d.overview || {};
+  const cp = d.critical_path || {path: [], total_latency_ms: 0};
+
+  return `
+    <div class="section">
+      <div class="section-title"><h3>问题诊断</h3><div class="hint">突出关键路径、故障恢复、冗余调用和可疑决策</div></div>
+      <div class="diag-grid">
+        <div class="diag-card"><div class="diag-k">失败工具</div><div class="diag-v">${ov.failed_tool_calls ?? 0}</div></div>
+        <div class="diag-card"><div class="diag-k">恢复链路</div><div class="diag-v">${ov.recovery_count ?? 0}</div></div>
+        <div class="diag-card"><div class="diag-k">冗余簇</div><div class="diag-v">${ov.redundant_cluster_count ?? 0}</div></div>
+        <div class="diag-card"><div class="diag-k">可疑决策</div><div class="diag-v">${ov.suspicious_decision_count ?? 0}</div></div>
+      </div>
+      <div class="diag-panel" style="margin-top:12px">
+        <div class="section-title"><h3 style="font-size:14px">关键路径</h3><div class="hint">${fmtMs(cp.total_latency_ms)}</div></div>
+        <div class="review-summary">${esc((cp.path || []).join(' → ') || '无关键路径数据')}</div>
+      </div>
+      <div class="section io" style="margin-top:12px">
+        <div class="diag-panel">
+          <div class="section-title"><h3 style="font-size:14px">故障恢复</h3></div>
+          ${renderDiagItems(d.recovery_chains || [], item => ({
+            title: `${item.failed_tool || 'tool'} → ${item.recovered_by || 'unknown'}`,
+            sub: `错误：${item.failed_error || 'unknown'} · 恢复耗时：${fmtMs(item.recovered_latency_ms)}`,
+          }), '未发现恢复链路')}
+        </div>
+        <div class="diag-panel">
+          <div class="section-title"><h3 style="font-size:14px">冗余调用</h3></div>
+          ${renderDiagItems(d.redundant_tools || [], item => ({
+            title: `${item.tool || 'tool'} · ${item.pattern === 'parallel_same_tool' ? '并行重复' : '连续重复'} × ${item.count}`,
+            sub: `状态：${(item.statuses || []).join(', ') || 'unknown'}`,
+          }), '未发现明显重复调用')}
+        </div>
+      </div>
+      <div class="diag-panel" style="margin-top:12px">
+        <div class="section-title"><h3 style="font-size:14px">可疑决策</h3></div>
+        ${renderDiagItems(d.suspicious_decisions || [], item => ({
+          title: `${item.action || 'unknown'} · confidence ${item.confidence ?? '-'}`,
+          sub: `decision candidates: ${item.candidate_count ?? 0} · tool candidates: ${item.tool_candidate_count ?? 0} · ${item.reason || ''}`,
+        }), '未检测到可疑决策')}
+      </div>
+    </div>`;
+}
+
+function renderDiagItems(items, mapper, emptyText){
+  if (!items.length) return `<div class="empty">${esc(emptyText)}</div>`;
+  return `<div class="diag-list">${items.map(item => {
+    const x = mapper(item);
+    return `<div class="diag-item"><div class="diag-item-title">${esc(x.title)}</div><div class="diag-item-sub">${esc(x.sub)}</div></div>`;
+  }).join('')}</div>`;
+}
+
+function toggleAgentOutput(btn){
+  const frame = document.getElementById('agentOutputFrame');
+  if (!frame || !btn) return;
+  const collapsed = frame.classList.contains('collapsed');
+  frame.classList.toggle('collapsed', !collapsed);
+  btn.textContent = collapsed ? '收起输出' : '展开输出';
+}
+
+function renderReviewSection(s){
+  const review = s.llm_review || null;
+  const metrics = s.metrics || {};
+  const summary = metrics.llm_review_summary || review?.summary || review?.raw?.summary || '';
+  const reviewLevel = metrics.llm_review_level || review?.review_level || 2;
+  const rawFindings = metrics.llm_review_findings || review?.findings || review?.raw?.findings || [];
+  const findings = rawFindings.filter(item => !(reviewLevel <= 2 && item?.severity === 'low'));
+  const error = review?.error || '';
+
+  if (!summary && !findings.length && !error) return '';
+
+  const findingsHtml = findings.length
+    ? `<div class="review-list">${findings.map(item => {
+        const severity = esc(item.severity || 'low');
+        return `<div class="review-item">
+          <div class="review-top">
+            <span class="sev ${severity}">${severity}</span>
+            <span class="pill">${esc(item.type || 'review')}</span>
+            <span class="review-target">${esc(item.target || '')}</span>
+          </div>
+          <div class="review-body"><b>原因：</b>${esc(item.reason || '—')}</div>
+          <div class="review-body"><b>建议：</b>${esc(item.suggestion || '—')}</div>
+        </div>`;
+      }).join('')}</div>`
+    : '<div class="empty">本次未发现明显的冗余或错误调用。</div>';
+
+  return `
+    <div class="section">
+      <div class="section-title"><h3>LLM 复盘</h3><div class="hint">自动分析本次执行中的冗余、失败与可疑调用</div></div>
+      <div class="review-card">
+        ${summary ? `<div class="review-summary">${esc(summary)}</div>` : ''}
+        ${error ? `<div class="review-summary" style="margin-top:12px;color:#b91c1c">复盘失败：${esc(error)}</div>` : ''}
+        ${findingsHtml}
+      </div>
+    </div>`;
+}
+
+function renderGantt(events){
+  llmPayloadStore = {};
+  const evs = (events || []).filter(e => e && (e.started_at || e.timestamp));
+  if (!evs.length) return '<div class="empty">无调用链数据</div>';
+
+  const norm = evs.map((e, idx) => {
+    const start = new Date(e.started_at || e.timestamp).getTime();
+    const endRaw = e.ended_at ? new Date(e.ended_at).getTime() : (start + Math.max(1, e.latency_ms || 1));
+    const end = Math.max(endRaw, start + Math.max(1, e.latency_ms || 1));
+    return { ...e, _idx: idx, start, end };
+  });
+
+  const min = Math.min(...norm.map(e => e.start));
+  const max = Math.max(...norm.map(e => e.end));
+  const total = Math.max(max - min, 1);
+
+  const marks = [0, .25, .5, .75, 1];
+  const scaleMarks = marks.map((r, i) => {
+    const x = r * 100;
+    const ms = Math.round(total * r);
+    const cls = i === 0 ? 'first' : (i === marks.length - 1 ? 'last' : '');
+    return `<div class="gantt-scale-label ${cls}" style="left:${x}%">${ms} ms</div>`;
+  }).join('');
+
+  const grouped = new Map();
+  for (const ev of norm) {
+    const key = ev.group_id || `__single__:${ev._idx}`;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(ev);
+  }
+  const groups = Array.from(grouped.entries()).map(([key, items]) => ({
+    key,
+    items: items.sort((a,b) => a.start - b.start),
+    grouped: !key.startsWith('__single__:'),
+    label: !key.startsWith('__single__:') ? key : null,
+  }));
+
+  function clusterItems(items){
+    const out = [];
+    let i = 0;
+    while (i < items.length) {
+      const cur = items[i];
+      if (cur.type === 'tool') {
+        let j = i + 1;
+        while (j < items.length && items[j].type === 'tool' && items[j].name === cur.name) j++;
+        if (j - i > 1) {
+          out.push({kind:'cluster', clusterType:'sequential', name:cur.name, items:items.slice(i, j)});
+          i = j;
+          continue;
+        }
+      }
+      out.push({kind:'event', item:cur});
+      i += 1;
+    }
+    return out;
+  }
+
+  function toolArgText(ev){
+    if (ev.type !== 'tool' || !ev.input_params) return '';
+    let args = ev.input_params.args || '';
+    args = String(args).replace(/^\(/,'').replace(/\)$/,'').replace(/^'/,'').replace(/'$/,'').replace(/^\s+|\s+$/g,'');
+    if (!args || args === '{}' || args === '[]') return '';
+    return args;
+  }
+
+  function llmBtn(ev){
+    if (ev.type !== 'llm' || (!ev.llm_prompt && !ev.llm_response)) return '';
+    const key = `llm-${ev._idx}`;
+    llmPayloadStore[key] = {
+      prompt: ev.llm_prompt ?? null,
+      response: ev.llm_response ?? null,
+      context: ev.context_snapshot ?? null,
+      memory: ev.memory_snapshot ?? null,
+      plan: ev.plan_snapshot ?? null,
+      decision: ev.decision_snapshot ?? null,
+      resume: ev.resume_snapshot ?? null,
+      execution: ev.execution_snapshot ?? null,
+    };
+    return `<button class="llm-toggle" onclick="openLlmModalByKey('${key}')">查看 Prompt / Response</button>`;
+  }
+
+  function rowHtml(ev, child=false){
+    const left = ((ev.start - min) / total) * 100;
+    const width = Math.max(((ev.end - ev.start) / total) * 100, 3.2);
+    const arg = toolArgText(ev);
+    return `
+      <div class="trace-row ${child ? 'trace-child' : ''}">
+        <div class="trace-left">
+          <div class="trace-name-inline">
+            <div class="trace-main">
+              <div class="gantt-name">${esc(ev.name || 'event')}</div>
+              ${arg ? `<div class="trace-arg">(${esc(arg)})</div>` : ''}
+            </div>
+            ${llmBtn(ev)}
+          </div>
+          <div class="gantt-meta">
+            <span class="badge ${ev.type}">${ev.type.toUpperCase()}</span>
+            ${ev.type==='llm' ? `<span class="pill">${ev.input_tokens||0} → ${ev.output_tokens||0} tokens</span>` : ''}
+            ${ev.type==='tool' ? `<span class="pill ${ev.status==='success'?'ok':'bad'}">${esc(ev.status||'')}</span>` : ''}
+          </div>
+        </div>
+        <div class="timeline-track">
+          <div class="timeline-grid"></div>
+          <div class="timeline-bar ${ev.type}" style="left:${left}%;width:${width}%" title="${esc(ev.name)} · ${fmtMs(ev.latency_ms)}"></div>
+        </div>
+        <div class="trace-duration ${ev.status==='failed' ? 'bad' : ''}">${fmtMs(ev.latency_ms)}</div>
+      </div>`;
+  }
+
+  function clusterRowHtml(cluster, child=false){
+    const items = cluster.items || [];
+    const first = items[0];
+    const last = items[items.length - 1];
+    const left = ((first.start - min) / total) * 100;
+    const width = Math.max(((last.end - first.start) / total) * 100, 4);
+    const totalLatency = items.reduce((sum, item) => sum + (item.latency_ms || 0), 0);
+    const failedCount = items.filter(item => item.status === 'failed').length;
+    const clusterId = `cluster-${first._idx}-${last._idx}`;
+    const isParallel = cluster.clusterType === 'parallel-same-tool';
+    const summary = isParallel ? first.name : first.name;
+    const countLabel = isParallel ? `并行 ${items.length} 次` : `连续 ${items.length} 次`;
+    return `
+      <div class="trace-row ${child ? 'trace-child' : ''}">
+        <div class="trace-left">
+          <div class="cluster-card">
+            <div class="cluster-head">
+              <div class="cluster-title">
+                <span class="badge tool">TOOL</span>
+                <div class="cluster-name">${esc(summary)}</div>
+                <div class="cluster-count">${countLabel}</div>
+              </div>
+              <button class="cluster-toggle" onclick="toggleCluster('${clusterId}', this)">展开</button>
+            </div>
+            <div class="cluster-meta">${failedCount ? `失败 ${failedCount} 次 · ` : ''}${isParallel ? '并行同类工具已折叠' : '连续重复调用已折叠'}</div>
+            <div id="${clusterId}" class="cluster-body" style="display:none">${items.map(item => rowHtml(item, true)).join('')}</div>
+          </div>
+        </div>
+        <div class="timeline-track">
+          <div class="timeline-grid"></div>
+          <div class="timeline-bar tool" style="left:${left}%;width:${width}%" title="${esc(summary)} · ${fmtMs(totalLatency)}"></div>
+        </div>
+        <div class="trace-duration ${failedCount ? 'bad' : ''}">${fmtMs(totalLatency)}</div>
+      </div>`;
+  }
+
+  const rows = groups.map(group => {
+    if (group.grouped) {
+      const sameToolBuckets = new Map();
+      for (const item of group.items) {
+        const key = `${item.type}:${item.name}`;
+        if (!sameToolBuckets.has(key)) sameToolBuckets.set(key, []);
+        sameToolBuckets.get(key).push(item);
+      }
+      const groupedItems = Array.from(sameToolBuckets.values()).map(items => items.length > 1
+        ? {kind:'cluster', clusterType:'parallel-same-tool', name:items[0].name, items}
+        : {kind:'event', item:items[0]});
+      return `
+        <div class="trace-group-box">
+          <div class="trace-group-header"><span class="dot"></span>并行组：${esc(group.label)}</div>
+          <div class="trace-group-sub">${group.items.length} 个并行任务</div>
+          ${groupedItems.map(entry => entry.kind === 'cluster' ? clusterRowHtml(entry, true) : rowHtml(entry.item, true)).join('')}
+        </div>`;
+    }
+    const clustered = clusterItems(group.items);
+    return clustered.map(entry => entry.kind === 'cluster' ? clusterRowHtml(entry, false) : rowHtml(entry.item, false)).join('');
+  }).join('');
+
+  return `
+    <div class="gantt-scale">
+      <div class="gantt-scale-track">
+        <div class="gantt-scale-grid"></div>
+        ${scaleMarks}
+      </div>
+    </div>
+    <div class="trace-head">
+      <div>事件</div>
+      <div>时间轴（真实开始/结束时间）</div>
+      <div style="text-align:right">耗时</div>
+    </div>
+    <div class="trace-table">${rows}</div>`;
+}
+
+function toggleCluster(id, btn){
+  const el = document.getElementById(id);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (btn) btn.textContent = open ? '展开' : '收起';
+}
+
+function renderLlmDetail(prompt, response){
+  let promptHtml = '';
+  if (Array.isArray(prompt)) {
+    promptHtml = `<div class="msg-list">${prompt.map(m => {
+      const role = esc(m.role || 'message');
+      const cls = ['system','user','assistant'].includes(role) ? role : 'user';
+      const body = esc(typeof m.content === 'string' ? m.content : JSON.stringify(m.content, null, 2));
+      return `<div class="msg-block"><div class="msg-head ${cls}">${role}</div><div class="msg-body">${body}</div></div>`;
+    }).join('')}</div>`;
+  } else if (prompt != null) {
+    promptHtml = `<div class="resp-block"><div class="resp-head">Prompt</div><div class="resp-body">${esc(typeof prompt === 'string' ? prompt : JSON.stringify(prompt, null, 2))}</div></div>`;
+  }
+
+  let responseHtml = '';
+  if (response != null) {
+    responseHtml = `<div class="resp-block"><div class="resp-head">Response</div><div class="resp-body">${esc(typeof response === 'string' ? response : JSON.stringify(response, null, 2))}</div></div>`;
+  }
+
+  return `${promptHtml}${responseHtml}`;
+}
+
+
+function openLlmModalByKey(key){
+  const payload = llmPayloadStore[key];
+  if (!payload) return;
+  const {prompt, response, context, memory, plan, decision, resume, execution} = payload;
+  const body = document.getElementById('llmModalBody');
+  body.innerHTML = renderLlmModalTabs({prompt, response, context, memory, plan, decision, resume, execution});
+  document.getElementById('llmModal').classList.add('open');
+  initLlmTabs();
+}
+function forceCloseLlmModal(){
+  document.getElementById('llmModal').classList.remove('open');
+}
+function closeLlmModal(evt){
+  if (evt.target && evt.target.id === 'llmModal') forceCloseLlmModal();
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') forceCloseLlmModal();
+});
+
+
+function renderKV(obj){
+  if (!obj) return '<div class="empty">无数据</div>';
+  return `<div class="kv">${Object.entries(obj).map(([k,v]) => `<div class="k">${esc(k)}</div><div class="v">${esc(typeof v === 'string' ? v : JSON.stringify(v, null, 2))}</div>`).join('')}</div>`;
+}
+
+function renderContextState(ctx){
+  if (!ctx) return '<div class="empty">无上下文数据</div>';
+  return `
+    <div class="state-grid">
+      <div class="state-card"><div class="state-title">System Prompt</div><div>${esc(ctx.system_prompt || '无')}</div></div>
+      <div class="state-card"><div class="state-title">Token Before Send</div><div>${ctx.token_count_before_send ?? '-'}</div></div>
+      <div class="state-card"><div class="state-title">Messages</div><div>${Array.isArray(ctx.messages) ? ctx.messages.length : 0} 条</div></div>
+      <div class="state-card"><div class="state-title">Tool Results</div><div>${Array.isArray(ctx.tool_results) ? ctx.tool_results.length : 0} 条</div></div>
+      <div class="state-card"><div class="state-title">Memory Items</div><div>${Array.isArray(ctx.memory_items) ? ctx.memory_items.length : 0} 条</div></div>
+      <div class="state-card"><div class="state-title">Retrieved Docs</div><div>${Array.isArray(ctx.retrieved_docs) ? ctx.retrieved_docs.length : 0} 条</div></div>
+      <div class="state-card full"><div class="state-title">Messages Preview</div><div class="json-box">${esc(JSON.stringify(ctx.messages || [], null, 2))}</div></div>
+    </div>`;
+}
+
+function renderMemoryState(mem){
+  if (!mem) return '<div class="empty">无记忆状态</div>';
+  return `
+    <div class="state-grid">
+      <div class="state-card"><div class="state-title">STM Hits</div><div>${(mem.stm_hits||[]).length}</div></div>
+      <div class="state-card"><div class="state-title">LTM Hits</div><div>${(mem.ltm_hits||[]).length}</div></div>
+      <div class="state-card"><div class="state-title">Writes</div><div>${(mem.writes||[]).length}</div></div>
+      <div class="state-card"><div class="state-title">Evictions</div><div>${(mem.evictions||[]).length}</div></div>
+      <div class="state-card full"><div class="state-title">Details</div><div class="json-box">${esc(JSON.stringify(mem, null, 2))}</div></div>
+    </div>`;
+}
+
+function renderPlanTree(items){
+  if (!Array.isArray(items) || !items.length) return '<div class="empty">无计划树</div>';
+  return `<div class="state-tree">${items.map(item => `
+    <div class="tree-item">
+      <div><b>${esc(item.step || 'step')}</b> · ${esc(item.status || '')}${item.kind ? ` · ${esc(item.kind)}` : ''}</div>
+      ${Array.isArray(item.children) && item.children.length ? `<div class="tree-children">${renderPlanTree(item.children)}</div>` : ''}
+    </div>`).join('')}</div>`;
+}
+
+function renderPlanState(plan){
+  if (!plan) return '<div class="empty">无计划状态</div>';
+  return `
+    ${plan.source ? `<div class="source-pill">来源: ${esc(plan.source)}</div>` : ''}
+    <div class="state-grid">
+      <div class="state-card"><div class="state-title">Root Goal</div><div>${esc(plan.root_goal || '无')}</div></div>
+      <div class="state-card"><div class="state-title">Phase</div><div>${esc(plan.phase || 'unknown')}</div></div>
+      <div class="state-card"><div class="state-title">Plan Version</div><div>${esc(plan.plan_version || 'v1')}</div></div>
+      <div class="state-card"><div class="state-title">Replanned Count</div><div>${plan.replanned_count ?? 0}</div></div>
+      <div class="state-card"><div class="state-title">Completed</div><ul class="state-list">${(plan.completed_steps||[]).map(x => `<li>${esc(x)}</li>`).join('') || '<li>无</li>'}</ul></div>
+      <div class="state-card"><div class="state-title">Pending</div><ul class="state-list">${(plan.pending_steps||[]).map(x => `<li>${esc(x)}</li>`).join('') || '<li>无</li>'}</ul></div>
+      <div class="state-card full"><div class="state-title">Plan Tree</div>${renderPlanTree(plan.plan_tree)}</div>
+    </div>`;
+}
+
+function renderDecisionState(decision){
+  if (!decision) return '<div class="empty">无决策状态</div>';
+  return `
+    ${decision.source ? `<div class="source-pill">来源: ${esc(decision.source)}</div>` : ''}
+    <div class="state-grid">
+      <div class="state-card"><div class="state-title">Action</div><div>${esc(decision.action || 'unknown')}</div></div>
+      <div class="state-card"><div class="state-title">Confidence</div><div>${decision.confidence ?? '-'}</div></div>
+      <div class="state-card full"><div class="state-title">Rationale</div><div>${esc(decision.rationale || '无')}</div></div>
+      <div class="state-card full"><div class="state-title">Candidates</div><ul class="state-list">${(decision.candidates||[]).map(x => `<li>${esc(x)}</li>`).join('') || '<li>无</li>'}</ul></div>
+    </div>`;
+}
+
+function renderResumeState(resume){
+  if (!resume) return '<div class="empty">无恢复状态</div>';
+  return `
+    ${resume.source ? `<div class="source-pill">来源: ${esc(resume.source)}</div>` : ''}
+    <div class="state-grid">
+      <div class="state-card"><div class="state-title">Interrupted</div><div>${resume.interrupted ? 'yes' : 'no'}</div></div>
+      <div class="state-card"><div class="state-title">Resumed</div><div>${resume.resumed ? 'yes' : 'no'}</div></div>
+      <div class="state-card"><div class="state-title">Checkpoint ID</div><div>${esc(resume.checkpoint_id || '无')}</div></div>
+      <div class="state-card"><div class="state-title">Resumed From</div><div>${esc(resume.resumed_from || '无')}</div></div>
+      <div class="state-card full"><div class="state-title">Recovered Context</div><div class="json-box">${esc(JSON.stringify(resume.recovered_context || [], null, 2))}</div></div>
+      <div class="state-card full"><div class="state-title">Recovered Memory</div><div class="json-box">${esc(JSON.stringify(resume.recovered_memory || [], null, 2))}</div></div>
+    </div>`;
+}
+
+function renderExecutionState(execution){
+  if (!execution) return '<div class="empty">无执行元状态</div>';
+  return `
+    <div class="state-grid">
+      <div class="state-card"><div class="state-title">Retry Count</div><div>${execution.retry_count ?? 0}</div></div>
+      <div class="state-card"><div class="state-title">Approval Needed</div><div>${execution.approval_needed ? 'yes' : 'no'}</div></div>
+      <div class="state-card"><div class="state-title">Human Handoff</div><div>${execution.human_handoff_needed ? 'yes' : 'no'}</div></div>
+      <div class="state-card"><div class="state-title">Finished</div><div>${execution.finished ? 'yes' : 'no'}</div></div>
+      <div class="state-card"><div class="state-title">Tool Param Source</div><div>${esc(execution.tool_param_source || '无')}</div></div>
+      <div class="state-card"><div class="state-title">Stop Reason</div><div>${esc(execution.stop_reason || '无')}</div></div>
+      <div class="state-card full"><div class="state-title">Tool Candidates</div><div class="json-box">${esc(JSON.stringify(execution.tool_candidates || [], null, 2))}</div></div>
+      <div class="state-card full"><div class="state-title">Skill Candidates</div><div class="json-box">${esc(JSON.stringify(execution.skill_candidates || [], null, 2))}</div></div>
+      <div class="state-card full"><div class="state-title">Retry Reasons</div><div class="json-box">${esc(JSON.stringify(execution.retry_reasons || [], null, 2))}</div></div>
+      <div class="state-card full"><div class="state-title">Context Trimming</div><div class="json-box">${esc(JSON.stringify({strategy: execution.context_trim_strategy, reason: execution.context_trim_reason, trimmed_messages: execution.trimmed_messages || []}, null, 2))}</div></div>
+      <div class="state-card full"><div class="state-title">Recovery / Handoff / Approval</div><div class="json-box">${esc(JSON.stringify({recovery_action: execution.recovery_action, recovery_reason: execution.recovery_reason, handoff_reason: execution.handoff_reason, approval_reason: execution.approval_reason}, null, 2))}</div></div>
+    </div>`;
+}
+
+function renderLlmModalTabs(data){
+  const tabs = [
+    ['prompt','Prompt', renderLlmDetail(data.prompt, null)],
+    ['response','Response', renderLlmDetail(null, data.response)],
+    ['context','Context', renderContextState(data.context)],
+    ['plan','Plan', renderPlanState(data.plan)],
+    ['execution','Execution', renderExecutionState(data.execution)],
+    ['resume','Resume', renderResumeState(data.resume)],
+  ];
+  return `
+    <div class="tab-bar">${tabs.map((t,i)=>`<button class="tab-btn ${i===0?'active':''}" data-tab="${t[0]}">${t[1]}</button>`).join('')}</div>
+    ${tabs.map((t,i)=>`<div class="tab-panel ${i===0?'active':''}" data-tab-panel="${t[0]}">${t[2]}</div>`).join('')}`;
+}
+
+function initLlmTabs(){
+  const body = document.getElementById('llmModalBody');
+  body.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.onclick = () => {
+      const key = btn.dataset.tab;
+      body.querySelectorAll('.tab-btn').forEach(x => x.classList.toggle('active', x===btn));
+      body.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.tabPanel===key));
+    };
+  });
+}
+
+function connectSSE(){
+  const es = new EventSource('/api/stream');
+  es.onmessage = (evt) => {
+    try {
+      const doc = JSON.parse(evt.data);
+      const summary = {
+        run_id: doc.run_id,
+        task: doc.task,
+        model: doc.model,
+        total_latency_ms: doc.metrics.total_latency_ms,
+        total_tokens: doc.metrics.total_tokens,
+        composite_score: doc.metrics.composite_score,
+        status: doc.status,
+        total_tool_calls: doc.metrics.total_tool_calls,
+        step_count: (doc.steps||[]).length,
+      };
+      sessions = [summary, ...sessions.filter(x => x.run_id !== summary.run_id)];
+      renderList();
+      if (!currentId) selectSession(summary.run_id);
+    } catch(e){}
+  };
+}
+
+loadSessions();
+connectSSE();
+</script>
+
+<div id="llmModal" class="modal-mask" onclick="closeLlmModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <div class="modal-title">Prompt / Response</div>
+      <button class="modal-close" onclick="forceCloseLlmModal()">关闭</button>
+    </div>
+    <div id="llmModalBody" class="modal-body"></div>
+  </div>
+</div>
+</body>
+</html>
