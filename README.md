@@ -1,21 +1,26 @@
 # AgentTrace
 
+<p align="left">
+  <a href="https://github.com/happli-sys/AgentTrace"><img alt="GitHub Repo" src="https://img.shields.io/badge/GitHub-AgentTrace-111827?logo=github"></a>
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white">
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-16a34a">
+  <img alt="Status" src="https://img.shields.io/badge/Status-Alpha-f59e0b">
+  <img alt="Local First" src="https://img.shields.io/badge/Local--First-Execution%20Tracing-2563eb">
+</p>
+
 **Open-source runtime tracing and diagnostics for AI agent execution flows.**
 
-AgentTrace helps you see **what your agent actually did** at runtime — not just whether the final answer looks good.
+AgentTrace helps you understand **what your agent actually did** at runtime — not just whether the final answer looks good.
 
-It captures and visualizes:
+It is built for people who want to answer questions like:
 
-- `LLM` calls
-- `Tool` calls
-- `Skill` execution
-- parallel branches
-- retries / fallback chains
-- prompt / response payloads
-- execution-state snapshots
-- post-run review and diagnostics
+- Why did the agent call this tool twice?
+- Where did the latency actually come from?
+- Which fallback path was triggered?
+- What did the LLM see before it made this decision?
+- Was the execution flow correct, redundant, or suspicious?
 
-If you want something closer to **pprof + tracing + agent diagnostics**, AgentTrace is built for that.
+If you want something closer to **pprof + tracing + agent diagnostics**, AgentTrace is designed for that.
 
 ---
 
@@ -30,13 +35,13 @@ AgentTrace focuses on a different question:
 
 > **What exactly happened during execution, and why did the agent behave that way?**
 
-That means AgentTrace is optimized for:
+That makes it especially useful for:
 
 - debugging execution flow
-- diagnosing redundancy and failure recovery
-- understanding tool usage patterns
+- diagnosing redundancy and fallback behavior
 - inspecting LLM prompts / responses in context
-- observing runtime state changes across a run
+- understanding tool usage patterns
+- tracing runtime state across a run
 
 ---
 
@@ -55,14 +60,14 @@ That means AgentTrace is optimized for:
 
 ### Execution tracing
 
-AgentTrace records a runtime trace for each session, including:
+AgentTrace records a runtime trace for each run, including:
 
 - span type
 - start / end time
 - latency
 - status
 - input parameters
-- grouping / parent-child relationships
+- grouping and parent-child relationships
 
 ### Structured state snapshots
 
@@ -77,7 +82,7 @@ For LLM spans, AgentTrace can capture:
 
 ### Diagnostics
 
-AgentTrace builds a diagnostics view on top of the trace:
+AgentTrace builds a diagnostics layer on top of the raw trace:
 
 - critical path
 - failed tool calls
@@ -101,6 +106,9 @@ Review strictness is configurable:
 - `review_level=1` → tolerant
 - `review_level=2` → balanced (default)
 - `review_level=3` → strict
+
+At `review_level=1/2`, the UI hides `low` severity findings by default.
+At `review_level=3`, all findings are shown.
 
 ---
 
@@ -188,7 +196,7 @@ Run it:
 python examples/demo_agent/main.py
 ```
 
-Try this stress prompt:
+Stress prompt:
 
 ```text
 分析当前目录下的项目；bash pwd；read examples/demo_agent/tools.py；grep calculate examples/demo_agent；查北京和西安的天气，并计算1123123123+1283123；生成北京天气播报；最后总结。
@@ -205,7 +213,7 @@ AgentTrace works best for:
 - CLI / hook-based agents
 - runtime debugging and diagnostics workflows
 
-The primary integration pattern is intentionally lightweight:
+The default integration style is intentionally lightweight:
 
 - patch modules once
 - wrap runs with `session(...)`
@@ -232,7 +240,7 @@ It is **not** currently focused on being:
 
 ## Still useful for objective metrics
 
-Although AgentTrace now centers on tracing and diagnostics, it still retains objective runtime metrics such as:
+Although AgentTrace centers on tracing and diagnostics, it still retains objective runtime metrics such as:
 
 - total latency
 - avg / p95 step latency
