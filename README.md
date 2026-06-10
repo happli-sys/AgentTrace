@@ -32,134 +32,24 @@ AgentTrace 适合这些场景：
 
 ## 当前核心能力
 
-### 1. 执行流监听
-
-可监听的核心调用类型：
-
-- `LLM`
-- `Tool`
-- `Skill`
-- `System step`
-
-每次运行会形成完整调用链，包括：
-
-- 调用开始/结束时间
-- 耗时
-- 输入参数
-- 调用状态
-- 并行分组
-- 重试与 fallback
-
-### 2. 结构化状态快照
-
-对 LLM span，当前支持采集这些状态：
-
-- `ContextSnapshot`
-- `MemorySnapshot`
-- `PlanSnapshot`
-- `DecisionSnapshot`
-- `ResumeSnapshot`
-- `ExecutionSnapshot`
-
-其中 `ExecutionSnapshot` 重点覆盖：
-
-- 中断/恢复原因
-- 重试次数 / 重试原因 / backoff
-- 工具候选集 / 技能候选集
-- 参数来源
-- 上下文裁剪策略
-- 恢复动作
-- 是否需要人工接管
-- 是否需要审批
-- 终止原因
-
-### 3. 本地落盘
-
-每次运行会落盘到：
-
-```text
-listen/
-  YYYYMMDD-HHMM/
-    <run_id>.json
-    sessions.jsonl
-```
-
-每条 session 文档包含：
-
-- `trace`
-- `steps`
-- `tool_calls`
-- `events`
-- `metrics`
-- `llm_review`
-- `diagnostics`
-
-### 4. Dashboard
-
-本地前端地址：
-
-- `http://localhost:3500`
-
-当前页面支持：
-
-- 会话列表
-- 调用链时间轴
-- 并行泳道展示
-- 默认折叠重复/并行同类工具调用
-- LLM 的 Prompt / Response 弹窗
-- 状态标签页：
-  - `Context`
-  - `Plan`
-  - `Execution`
-  - `Resume`
-- 问题诊断视图
-- LLM 复盘区块
-- 最终 Agent 输出折叠/展开
-
-### 5. LLM 复盘
-
-每次运行结束后，可自动调用 LLM 对执行流做复盘。
-
-复盘目标包括：
-
-- 多余工具调用
-- 错误工具调用
-- 失败工具调用
-- 可疑 fallback
-- 多余 / 错误 skill 调用
-- 执行流中的明显问题
-
-支持严格度配置：
-
-- `review_level=1`：开放，少报问题
-- `review_level=2`：平衡，默认模式
-- `review_level=3`：保守，更严格
-
-说明：
-
-- `level=1/2` 前端默认不展示 `low` 等级 findings
-- `level=3` 会展示全部 findings
-
-### 6. 问题诊断视图
-
-除了自然语言复盘，AgentTrace 还会生成结构化诊断摘要，突出：
-
-- 关键路径
-- 失败工具
-- 恢复链路
-- 冗余调用簇
-- 可疑决策
-- findings 严重度分布
+- 监听 `LLM / Tool / Skill` 执行流
+- 记录并行、重试、fallback、重复调用
+- 采集 `Prompt / Response / Context / Plan / Execution` 等状态快照
+- 本地落盘运行记录并提供 Dashboard 可视化
+- 运行后用 LLM 自动复盘冗余、失败与可疑调用
+- 生成结构化问题诊断：关键路径、恢复链路、冗余调用、可疑决策
 
 ---
 
 ## 安装
 
 ```bash
-pip install agenttrace
+git clone https://github.com/happli-sys/AgentTrace.git
+cd AgentTrace
+pip install -e .
 ```
 
-> 当前仓库中的 Python 包名已经迁移为 `agenttrace`。
+> 当前推荐从源码安装。未来发布到 PyPI 时，发布名将使用 `agenttrace-runtime`，导入仍然是 `import agenttrace`。
 
 ---
 
