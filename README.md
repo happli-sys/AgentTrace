@@ -237,6 +237,31 @@ It is **not** currently focused on being:
 - a full SaaS observability suite
 
 ---
+## Who this is for
+
+AgentTrace is especially useful for:
+
+- engineers building custom agents
+- teams debugging real runtime behavior
+- people who need local-first execution visibility
+- anyone who wants to inspect agent decisions beyond final output quality
+
+---
+
+## Roadmap direction
+
+Current direction is intentionally focused:
+
+- stronger execution tracing
+- better diagnostics and issue localization
+- cleaner runtime state modeling
+- broader integration patterns for source-based agents
+- more production-friendly export / observability hooks
+
+The goal is to keep AgentTrace useful as a **general execution-flow listener**, not to turn it into a bloated all-in-one platform too early.
+
+---
+
 
 ## Still useful for objective metrics
 
@@ -254,7 +279,17 @@ Although AgentTrace centers on tracing and diagnostics, it still retains objecti
 
 ---
 
-## Development
+## Contributing
+
+Contributions are welcome — especially around:
+
+- new agent integrations
+- richer diagnostics
+- runtime state capture
+- dashboard usability
+- packaging and release polish
+
+For local development:
 
 ```bash
 git clone https://github.com/happli-sys/AgentTrace.git
@@ -262,6 +297,8 @@ cd AgentTrace
 pip install -e ".[dev]"
 pytest tests/
 ```
+
+If you want to contribute, small focused improvements are preferred over large platform-style expansions.
 
 ---
 
