@@ -38,6 +38,7 @@ __all__ = [
     "RunStatus",
     "JSONReporter",
     "CSVReporter",
+    "start_ingest_server",
 ]
 
 _engine = MetricsEngine()
@@ -305,3 +306,5 @@ def parallel_group(name: str | None = None):
     gid = name or f"parallel-{str(_uuid.uuid4())[:8]}"
     with _set_group_ctx(gid):
         yield gid
+
+from agenttrace.ingest import start_ingest_server

@@ -221,6 +221,31 @@ Stress prompt:
 
 ---
 
+## Protocol ingest (for non-Python agents)
+
+AgentTrace now includes a first protocol-based ingestion path for non-Python agents.
+
+Start the ingest server:
+
+```python
+from agenttrace import start_ingest_server
+
+start_ingest_server(port=7760)
+```
+
+Then send protocol events to:
+
+- `POST /api/v1/events`
+- `POST /api/v1/events/batch`
+
+The protocol draft lives in:
+
+- `docs/protocol-v0.1.md`
+
+This is the recommended direction for Go / Node / Java style agents that cannot use the native Python patch/session integration.
+
+---
+
 ## Integration model
 
 AgentTrace works best for:
@@ -235,6 +260,13 @@ The default integration style is intentionally lightweight:
 - patch modules once
 - wrap runs with `session(...)`
 - inspect results locally
+
+For non-Python agents, AgentTrace is evolving toward a protocol-based model. Current repository drafts include:
+
+- `docs/protocol-v0.1.md`
+- `docs/agenttrace-go-adapter-v0.md`
+- `docs/agenttrace-go-api-sketch.md`
+- `sdk/go/agenttracego/` (prototype)
 
 ---
 
