@@ -134,7 +134,19 @@ Current UI features include:
 
 ## Quick start
 
-### 1. Install from source
+### 1. Install
+
+```bash
+pip install agenttrace-runtime
+```
+
+If your mirror has not synced the package yet, install from the official PyPI index:
+
+```bash
+pip install -i https://pypi.org/simple agenttrace-runtime
+```
+
+If you want to install from source instead:
 
 ```bash
 git clone https://github.com/happli-sys/AgentTrace.git
