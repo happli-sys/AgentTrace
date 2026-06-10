@@ -4,6 +4,7 @@
   <a href="https://github.com/happli-sys/AgentTrace"><img alt="GitHub Repo" src="https://img.shields.io/badge/GitHub-AgentTrace-111827?logo=github"></a>
   <img alt="Python" src="https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white">
   <img alt="License" src="https://img.shields.io/badge/License-MIT-16a34a">
+  <a href="https://pypi.org/project/agenttrace-runtime/0.1.0/"><img alt="PyPI" src="https://img.shields.io/badge/PyPI-agenttrace--runtime-0f766e?logo=pypi&logoColor=white"></a>
   <img alt="Status" src="https://img.shields.io/badge/Status-Alpha-f59e0b">
   <img alt="Local First" src="https://img.shields.io/badge/Local--First-Execution%20Tracing-2563eb">
 </p>
@@ -135,6 +136,10 @@ Current UI features include:
 ## Quick start
 
 ### 1. Install
+
+PyPI:
+
+- https://pypi.org/project/agenttrace-runtime/0.1.0/
 
 ```bash
 pip install agenttrace-runtime
